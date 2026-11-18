@@ -11,8 +11,9 @@
     "lint": "npm run lint --workspaces",
     "seed": "npm run seed -w apps/api",
     "db": "node scripts/db.mjs",
-    "format": "prettier --write apps scripts README.md docs/*.md *.json",
-    "format:check": "prettier --check apps scripts README.md docs/*.md *.json"
+    "keepalive": "node scripts/ping-render.mjs",
+    "format": "prettier --write .github apps scripts README.md docs/*.md *.json",
+    "format:check": "prettier --check .github apps scripts README.md docs/*.md *.json"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
