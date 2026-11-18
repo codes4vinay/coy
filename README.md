@@ -246,19 +246,21 @@ For a local production run, build first, then start the API and `npm run start -
 
 ## Render keep-alive script
 
-`scripts/ping-render.mjs` immediately pings `https://coy-9vf6.onrender.com/health`, then repeats every **14 minutes** while the process is running. It verifies HTTP success and `{ "success": true }`, retries temporary failures, and keeps running if a check fails. Requests never overlap, and request time is included in the interval. No GitHub Actions workflow is used.
+The Express API automatically starts `scripts/ping-render.mjs` when running in production on Render. It uses Render's built-in `RENDER_EXTERNAL_URL` to call its own public `/health` endpoint immediately and then every **14 minutes**, inside the same API process. No GitHub Actions workflow, separate service, or local computer is required. The normal Render start command stays `npm run start -w apps/api`.
 
-Start the loop in a separate terminal:
+The script verifies HTTP success and `{ "success": true }`, retries temporary failures, and keeps running if a check fails. Requests never overlap, and request time is included in the interval. It restarts with the API after each deployment and stops when the API shuts down. Render logs show `Render keep-alive started` and each successful check. Set the optional `RENDER_HEALTH_URL` environment variable only if you want to override the public endpoint.
+
+For an optional standalone loop, run:
 
 ```powershell
 npm run keepalive
 ```
 
-Keep that terminal and its computer running, or run the script on a separate always-on host. Stop it with **Ctrl+C**. Running it inside the same sleeping Render service cannot reliably wake that service.
+The standalone command requires its terminal and computer to remain running. Stop it with **Ctrl+C**. This is optional; the production API starts its own loop automatically.
 
 For a single health check, run `npm run keepalive -- --once`. To use another endpoint, set the process environment variable `RENDER_HEALTH_URL` to the full health-check URL before starting the script.
 
-This is a best-effort way to reduce inactivity shutdowns. Closing the terminal, computer sleep, network outages, or hosting limits can still interrupt checks. Keeping the service running remains subject to [Render's free-tier limits](https://render.com/docs/free#free-instance-hours).
+Self-pinging is best-effort: while the process is running, public requests may prevent the inactivity threshold being reached. Render does not explicitly guarantee that self-generated traffic prevents sleep. A suspended process cannot execute its timer or wake itself, and outages or hosting limits can still interrupt checks. Keeping the service running remains subject to [Render's free-tier limits](https://render.com/docs/free#free-instance-hours).
 
 ## Design research and assignment scope
 
