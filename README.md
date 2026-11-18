@@ -244,13 +244,21 @@ Render Free has no dashboard shell or one-off jobs. Seed Atlas from this checkou
 
 For a local production run, build first, then start the API and `npm run start -w apps/web` in separate terminals. Keep MongoDB running.
 
-## Scheduled Render health check
+## Render keep-alive script
 
-`.github/workflows/render-keepalive.yml` runs `scripts/ping-render.mjs` from GitHub Actions every ten minutes, on relevant pushes to `main`, and on manual dispatch. It pings `https://coy-9vf6.onrender.com/health`, verifies both HTTP success and `{ "success": true }`, and retries up to three times with a 75-second timeout per attempt to allow an initial cold start. No credentials, dependency installation, or local running computer are required.
+`scripts/ping-render.mjs` immediately pings `https://coy-9vf6.onrender.com/health`, then repeats every **14 minutes** while the process is running. It verifies HTTP success and `{ "success": true }`, retries temporary failures, and keeps running if a check fails. Requests never overlap, and request time is included in the interval. No GitHub Actions workflow is used.
 
-Run a check locally with `npm run keepalive`. To run it manually on GitHub, open **Actions → Render health check → Run workflow**. Change the endpoint by setting the repository's **Actions variable** `RENDER_HEALTH_URL` to a full health-check URL. Disable the workflow from its Actions menu when you no longer need it.
+Start the loop in a separate terminal:
 
-This is a best-effort way to reduce inactivity shutdowns, not guaranteed uptime. GitHub schedules can be delayed or dropped and are automatically disabled after 60 days without repository activity in public repositories: [GitHub schedule documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule). Keeping a service running consumes Render's 750 free instance hours per workspace per month, shared with other free services: [Render free-tier limits](https://render.com/docs/free#free-instance-hours).
+```powershell
+npm run keepalive
+```
+
+Keep that terminal and its computer running, or run the script on a separate always-on host. Stop it with **Ctrl+C**. Running it inside the same sleeping Render service cannot reliably wake that service.
+
+For a single health check, run `npm run keepalive -- --once`. To use another endpoint, set the process environment variable `RENDER_HEALTH_URL` to the full health-check URL before starting the script.
+
+This is a best-effort way to reduce inactivity shutdowns. Closing the terminal, computer sleep, network outages, or hosting limits can still interrupt checks. Keeping the service running remains subject to [Render's free-tier limits](https://render.com/docs/free#free-instance-hours).
 
 ## Design research and assignment scope
 
