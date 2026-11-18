@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: coy-discover-api
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci && npm run build -w apps/api
+    startCommand: npm run start -w apps/api
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 22.22.0
+      - key: MONGODB_URI
+        sync: false
+      - key: WEB_ORIGIN
+        sync: false
