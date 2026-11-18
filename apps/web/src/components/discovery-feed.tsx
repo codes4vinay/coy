@@ -1,5 +1,5 @@
 'use client';
-import { AnimatePresence } from 'framer-motion';
+import { useEffect, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -13,23 +13,41 @@ import {
 } from 'lucide-react';
 import type { Profile } from '@/lib/api';
 import { ProfileCard } from './profile-card';
+import { PortraitPreload } from './portrait-preload';
+import type { SwipeDirection } from '@/lib/swipe-motion';
+function SlowSaveHint() {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setSlow(true), 1200);
+    return () => clearTimeout(timer);
+  }, []);
+  return slow ? (
+    <>
+      <LoaderCircle size={15} className="spin" />
+      One moment…
+    </>
+  ) : (
+    <>A little courage goes a long way.</>
+  );
+}
 export function DiscoveryFeed({
   profiles,
   busy,
-  lastDirection,
+  swipeDirection,
   swipe,
   onMatches,
   load,
 }: {
   profiles: Profile[];
   busy: boolean;
-  lastDirection: 'like' | 'pass';
+  swipeDirection: SwipeDirection | null;
   swipe: (d: 'like' | 'pass') => Promise<void>;
   onMatches: () => void;
   load: () => Promise<void>;
 }) {
   return (
     <div className="discovery-layout">
+      <PortraitPreload photos={profiles.slice(1, 3).map((profile) => profile.photo)} />
       <aside className="intro-panel">
         <span className="note-eyebrow">LESS PRESSURE, MORE POSSIBILITY</span>
         <h2>
@@ -54,14 +72,13 @@ export function DiscoveryFeed({
       <section className="card-zone" aria-label="Profile discovery">
         {profiles[0] ? (
           <>
-            <AnimatePresence mode="wait" custom={lastDirection}>
-              <ProfileCard
-                key={profiles[0]._id}
-                profile={profiles[0]}
-                busy={busy}
-                onSwipe={(d) => void swipe(d)}
-              />
-            </AnimatePresence>
+            <ProfileCard
+              key={profiles[0]._id}
+              profile={profiles[0]}
+              busy={busy}
+              direction={swipeDirection}
+              onSwipe={(d) => void swipe(d)}
+            />
             <div className="action-row">
               <div>
                 <button
@@ -74,15 +91,8 @@ export function DiscoveryFeed({
                 </button>
                 <span>Pass</span>
               </div>
-              <p>
-                {busy ? (
-                  <>
-                    <LoaderCircle size={15} className="spin" />
-                    Saving your choice
-                  </>
-                ) : (
-                  <>A little courage goes a long way.</>
-                )}
+              <p role="status" aria-live="polite">
+                {busy ? <SlowSaveHint /> : <>A little courage goes a long way.</>}
               </p>
               <div>
                 <button

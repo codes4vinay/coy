@@ -650,6 +650,10 @@ h1 > span {
   background: white;
   overflow: hidden;
   cursor: grab;
+  will-change: transform;
+  backface-visibility: hidden;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .profile-card:active {
   cursor: grabbing;

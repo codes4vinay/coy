@@ -20,22 +20,24 @@ export async function getFeed() {
     .lean();
 }
 export async function recordSwipe(input: SwipeInput) {
+  // These are independent, read-only lookups. Keep parallel work outside the transaction:
+  // MongoDB sessions do not support concurrent operations within a transaction.
+  const [preferences, profile] = await Promise.all([
+    Preferences.findOne({ userId: DEMO_USER_ID }).select('paused interests').lean(),
+    Profile.findById(input.profileId).select(`${publicFields} +hasLikedDemoUser`).lean(),
+  ]);
+  if (preferences?.paused)
+    throw new ApiError(
+      409,
+      'DISCOVERY_PAUSED',
+      'Discovery is paused. Resume in preferences to meet new people.',
+    );
+  if (!profile)
+    throw new ApiError(404, 'PROFILE_NOT_FOUND', 'This profile is no longer available.');
+
   // A mutual like and its match commit together; failed match writes roll back the swipe.
   return mongoose.connection.transaction(async (session) => {
-    const preferences = await Preferences.findOne({ userId: DEMO_USER_ID }).session(session);
-    if (preferences?.paused)
-      throw new ApiError(
-        409,
-        'DISCOVERY_PAUSED',
-        'Discovery is paused. Resume in preferences to meet new people.',
-      );
-    const profile = await Profile.findById(input.profileId)
-      .select(`${publicFields} +hasLikedDemoUser`)
-      .session(session);
-    if (!profile)
-      throw new ApiError(404, 'PROFILE_NOT_FOUND', 'This profile is no longer available.');
-    if (await Swipe.exists({ userId: DEMO_USER_ID, profileId: profile._id }).session(session))
-      throw new ApiError(409, 'ALREADY_SWIPED', 'This profile has already been swiped.');
+    // The unique user/profile index rejects repeats without an extra database round trip.
     await Swipe.create(
       [{ userId: DEMO_USER_ID, profileId: profile._id, direction: input.direction }],
       { session },

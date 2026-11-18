@@ -19,7 +19,7 @@ export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
   const code =
     typeof error === 'object' && error !== null && 'code' in error ? error.code : undefined;
   if (code === 11000) {
-    // The unique index also catches simultaneous swipes that both passed the initial lookup.
+    // The unique index is authoritative for both repeated and simultaneous swipe requests.
     res.status(409).json({
       success: false,
       error: { code: 'ALREADY_SWIPED', message: 'This profile has already been swiped.' },

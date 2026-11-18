@@ -33,7 +33,7 @@ export function Discover() {
     busy,
     celebration,
     setCelebration,
-    lastDirection,
+    swipeDirection,
     load,
     swipe,
     preferences,
@@ -188,7 +188,7 @@ export function Discover() {
               <DiscoveryFeed
                 profiles={profiles}
                 busy={busy}
-                lastDirection={lastDirection}
+                swipeDirection={swipeDirection}
                 swipe={swipe}
                 onMatches={() => setView('matches')}
                 load={load}

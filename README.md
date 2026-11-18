@@ -36,7 +36,7 @@ On macOS/Linux use `cp .env.example .env`. Do not commit `.env`.
 - Home placeholder and fully functional Discover with internal For you / Matches navigation.
 - 32 fictional adult profiles; 8 have privately expressed interest. Stock photos illustrate fictional identities.
 - Mobile drag right/left with LIKE/PASS feedback, configurable 100px threshold, desktop buttons, and left/right keyboard shortcuts.
-- Choice submission lock, server-confirmed advancement, restrained card depth and motion, reduced-motion support.
+- Immediate finger-tracking and velocity-aware swipe exits, overlapped saving and animation, predecoded upcoming portraits, duplicate-input protection, and reduced-motion support. The next profile appears only after the server confirms the previous choice; failed saves spring the current card back.
 - Full-screen accessible match dialog, focus restoration, confirmed matches grid.
 - Loading skeletons, feed exhaustion, empty matches, image fallbacks, network errors/retry, toast feedback, duplicate/missing-profile recovery.
 - Locally hosted font, wordmark, and stock images; no discovery image requests to third-party hosts.
@@ -212,7 +212,7 @@ Other codes include `INVALID_INPUT` (400), `INVALID_JSON` (400), `PROFILE_NOT_FO
 - **Swipe:** fixed userId, profileId, `like | pass`, createdAt. Unique `{userId, profileId}` index prevents repeat choices and supports feed exclusion.
 - **Match:** fixed userId, profileId, createdAt. Unique `{userId, profileId}` index prevents duplicate matches. `{userId, createdAt:-1}` supports retrieval. Profile `_id` has MongoDB's default index for feed order/filtering.
 
-The like transaction checks existence and previous swipe, inserts the swipe, privately checks reciprocal interest, then inserts a match only if mutual. A pass never creates a match. If inserting a match fails, the swipe rolls back. Incoming interest never affects public ordering, counts, tags, or non-match response shape. No fake compatibility percentage, online-status signal, or incoming-interest badge is displayed. Transactions require Atlas or a replica set.
+The service reads the profile and preferences concurrently before starting the write transaction. The unique user/profile index rejects repeated swipes without a separate existence query. The transaction saves the swipe and inserts a match only if reciprocal interest is confirmed privately. A pass never creates a match. If inserting a match fails, the swipe rolls back. Incoming interest never affects public ordering, counts, tags, or non-match response shape. No fake compatibility percentage, online-status signal, or incoming-interest badge is displayed. Transactions require Atlas or a replica set.
 
 This is intentionally a **single shared demo account** with no authentication. A public deployment allows everyone to modify that same account. It is an assignment demo, not a multi-user dating service. Rate limiting is in-process (120 requests/minute/IP); a scaled deployment would need a shared rate-limit store and real authentication. No user IDs, profile details, or incoming interest are trusted from frontend submissions. CORS is an origin restriction for browsers, not authentication.
 

@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Image from 'next/image';
+export const PORTRAIT_SIZES = '(max-width: 650px) 90vw, 360px';
 export function Portrait({
   src,
   name,
@@ -28,8 +29,9 @@ export function Portrait({
       src={src}
       alt={`Illustrative portrait for ${name}`}
       fill
-      sizes="(max-width: 650px) 90vw, 360px"
+      sizes={PORTRAIT_SIZES}
       loading={eager ? 'eager' : 'lazy'}
+      fetchPriority={eager ? 'high' : 'auto'}
       onError={() => setFailed(true)}
       draggable={false}
     />

@@ -8,6 +8,7 @@ import {
   type Preferences,
   type PreferenceOptions,
 } from '@/lib/api';
+import { SWIPE_EXIT_MS, type SwipeDirection } from './swipe-motion';
 export function useDiscovery(tab: 'home' | 'discover', view: 'feed' | 'matches') {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
@@ -16,7 +17,7 @@ export function useDiscovery(tab: 'home' | 'discover', view: 'feed' | 'matches')
   const [toast, setToast] = useState('');
   const [busy, setBusy] = useState(false);
   const [celebration, setCelebration] = useState<Match | null>(null);
-  const [lastDirection, setLastDirection] = useState<'like' | 'pass'>('like');
+  const [swipeDirection, setSwipeDirection] = useState<SwipeDirection | null>(null);
   const [preferences, setPreferences] = useState<Preferences>({
     paused: false,
     city: '',
@@ -87,9 +88,16 @@ export function useDiscovery(tab: 'home' | 'discover', view: 'feed' | 'matches')
       if (!profile || lock.current || celebration || loading || preferences.paused) return;
       lock.current = true;
       setBusy(true);
-      setLastDirection(direction);
+      setSwipeDirection(direction);
+      const started = performance.now();
       try {
         const result = await api.swipe(profile._id, direction);
+        // Saving and motion overlap. Never replace a card before both are complete.
+        const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 0
+          : SWIPE_EXIT_MS;
+        const remaining = duration - (performance.now() - started);
+        if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining));
         // Advance only after MongoDB confirms the choice, so failures keep the current card.
         setProfiles((previous) => previous.filter((p) => p._id !== profile._id));
         if (result.matched && result.match) {
@@ -98,12 +106,7 @@ export function useDiscovery(tab: 'home' | 'discover', view: 'feed' | 'matches')
             ...previous.filter((m) => m.id !== result.match!.id),
           ]);
           setCelebration(result.match);
-        } else
-          setToast(
-            direction === 'like'
-              ? 'Your like is safely between you and Coy.'
-              : 'Passed. On to a new possibility.',
-          );
+        }
       } catch (e) {
         if (e instanceof ApiError && (e.status === 409 || e.status === 404)) {
           setToast(
@@ -116,6 +119,8 @@ export function useDiscovery(tab: 'home' | 'discover', view: 'feed' | 'matches')
           await load();
         } else setToast((e as Error).message);
       } finally {
+        // Clearing the direction springs an unsaved card back after a failed request.
+        setSwipeDirection(null);
         lock.current = false;
         setBusy(false);
       }
@@ -167,7 +172,7 @@ export function useDiscovery(tab: 'home' | 'discover', view: 'feed' | 'matches')
     busy,
     celebration,
     setCelebration,
-    lastDirection,
+    swipeDirection,
     load,
     swipe,
     preferences,

@@ -37,8 +37,12 @@ export async function request<T>(path: string, options?: RequestInit): Promise<T
   try {
     const response = await fetch(`${base}${path}`, {
       ...options,
-      cache: 'no-store',
-      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      // Reads stay fresh; writes can reuse the browser's cached CORS preflight.
+      cache: options?.body ? 'default' : 'no-store',
+      headers: {
+        ...(options?.body ? { 'Content-Type': 'application/json' } : {}),
+        ...options?.headers,
+      },
       signal: AbortSignal.timeout(12000),
     });
     const body = await response.json();

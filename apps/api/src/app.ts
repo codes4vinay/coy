@@ -14,6 +14,7 @@ app.use(
     origin: env.WEB_ORIGIN.split(',').map((s) => s.trim()),
     methods: ['GET', 'POST', 'PUT'],
     allowedHeaders: ['Content-Type'],
+    maxAge: 600,
   }),
 );
 app.use(
