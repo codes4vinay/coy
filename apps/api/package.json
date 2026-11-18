@@ -8,9 +8,7 @@
     "start": "node dist/server.js",
     "seed": "tsx src/scripts/seed.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src",
-    "test": "vitest run",
-    "e2e:serve": "tsx src/scripts/e2e.ts"
+    "lint": "eslint src"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -25,12 +23,8 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
     "@types/node": "^22.19.0",
-    "@types/supertest": "^6.0.3",
     "eslint": "^9.39.0",
-    "mongodb-memory-server": "^10.3.0",
-    "supertest": "^7.1.4",
     "tsx": "^4.20.6",
-    "typescript-eslint": "^8.46.0",
-    "vitest": "^5.1.0"
+    "typescript-eslint": "^8.46.0"
   }
 }

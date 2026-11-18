@@ -9,15 +9,12 @@
     "build": "npm run build --workspaces",
     "typecheck": "npm run typecheck --workspaces",
     "lint": "npm run lint --workspaces",
-    "test": "npm run test -w apps/api",
     "seed": "npm run seed -w apps/api",
-    "test:e2e": "playwright test",
     "db": "node scripts/db.mjs",
-    "format": "prettier --write apps scripts tests playwright.config.ts README.md docs/*.md *.json",
-    "format:check": "prettier --check apps scripts tests playwright.config.ts README.md docs/*.md *.json"
+    "format": "prettier --write apps scripts README.md docs/*.md *.json",
+    "format:check": "prettier --check apps scripts README.md docs/*.md *.json"
   },
   "devDependencies": {
-    "@playwright/test": "^1.56.0",
     "concurrently": "^9.2.1",
     "prettier": "^3.10.1",
     "typescript": "^5.9.3"

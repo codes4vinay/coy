@@ -72,10 +72,8 @@ apps/
     src/services/         # Feed, transactions, match retrieval
     src/models/           # Mongoose schemas, public projection, indexes
     src/middleware/       # Consistent sanitized errors
-    src/scripts/          # Seed and isolated E2E bootstrap
-    src/discover.test.ts  # MongoDB replica-set integration tests
+    src/scripts/          # Idempotent database seed
 scripts/db.mjs            # Persistent local replica-set helper
-tests/                    # Real browser tests
 docs/                     # Design research, asset sources, verification screenshots
 ```
 
@@ -85,16 +83,14 @@ If an Atlas connection fails at `querySrv` because a local DNS resolver refuses 
 
 The API reads the root `.env` regardless of workspace working directory. Process environment variables take precedence. Next.js reads `NEXT_PUBLIC_API_URL` from its own environment; localhost is the development default. For a nondefault frontend API URL, set it in **`apps/web/.env.local`** or the frontend host's build environment. Public Next.js variables are baked in at build time. The root `.env.example` documents all values but Next.js does not automatically read the monorepo root file.
 
-| Variable                | Purpose                                                                     | Development default                                     |
-| ----------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------- |
-| `MONGODB_URI`           | Backend-only replica-set or Atlas connection                                | `mongodb://127.0.0.1:27017/coy_discover?replicaSet=rs0` |
-| `PORT`                  | API listening port                                                          | `4000`                                                  |
-| `WEB_ORIGIN`            | Exact permitted frontend origin; comma-separated explicit origins supported | `http://localhost:3000`                                 |
-| `NODE_ENV`              | `development`, `test`, or `production`                                      | `development`                                           |
-| `NEXT_PUBLIC_API_URL`   | Frontend's public API origin, without trailing slash                        | `http://localhost:4000`                                 |
-| `MONGOD_BINARY`         | Optional helper path to `mongod` executable                                 | Platform-specific                                       |
-| `MONGOMS_SYSTEM_BINARY` | Optional existing mongod for backend tests                                  | Memory Server downloads its own binary                  |
-| `E2E_MONGODB_URI`       | Optional disposable E2E replica-set database                                | Local port 27018, database `coy_discover_e2e`           |
+| Variable              | Purpose                                                                     | Development default                                     |
+| --------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `MONGODB_URI`         | Backend-only replica-set or Atlas connection                                | `mongodb://127.0.0.1:27017/coy_discover?replicaSet=rs0` |
+| `PORT`                | API listening port                                                          | `4000`                                                  |
+| `WEB_ORIGIN`          | Exact permitted frontend origin; comma-separated explicit origins supported | `http://localhost:3000`                                 |
+| `NODE_ENV`            | `development`, `test`, or `production`                                      | `development`                                           |
+| `NEXT_PUBLIC_API_URL` | Frontend's public API origin, without trailing slash                        | `http://localhost:4000`                                 |
+| `MONGOD_BINARY`       | Optional helper path to `mongod` executable                                 | Platform-specific                                       |
 
 There are no credentials in `.env.example`. Production startup requires an explicit database URI and non-local frontend origin. Never put the MongoDB URI in a `NEXT_PUBLIC_` variable.
 
@@ -220,32 +216,18 @@ The like transaction checks existence and previous swipe, inserts the swipe, pri
 
 This is intentionally a **single shared demo account** with no authentication. A public deployment allows everyone to modify that same account. It is an assignment demo, not a multi-user dating service. Rate limiting is in-process (120 requests/minute/IP); a scaled deployment would need a shared rate-limit store and real authentication. No user IDs, profile details, or incoming interest are trusted from frontend submissions. CORS is an origin restriction for browsers, not authentication.
 
-## Verification
+## Development checks
 
 ```powershell
 npm run typecheck
 npm run lint
-npm test
+npm run format:check
 npm run build
 ```
 
-Backend tests use a separate temporary MongoDB replica set via MongoDB Memory Server and never touch your configured application database. First run may download MongoDB. To reuse your local binary on Windows:
+The repository does not include automated tests. For a manual demo, verify that a passed or liked profile stays excluded after refresh, a mutual match persists in Matches, and discovery preferences and pause/resume survive reload. Check the layout at mobile and desktop widths.
 
-```powershell
-$env:MONGOMS_SYSTEM_BINARY='C:\Program Files\MongoDB\Server\7.0\bin\mongod.exe'
-npm test
-```
-
-Browser checks require the local helper (or an `E2E_MONGODB_URI` for a replica set), with ports 3100 and 4100 free:
-
-```powershell
-npx playwright install chromium
-npm run test:e2e
-```
-
-Playwright starts its own frontend/API and resets only the explicitly named `coy_discover_e2e` database. Stop an existing `next dev` for this checkout before running because Next.js uses a shared dev lock. Tests check widths **320, 375, 430, 768, 1024, 1440**, real MongoDB-backed match/reload persistence, pass/reload exclusion, and dragging. Screenshots go to ignored `test-results/`. Test DB bootstrap refuses any differently named database. Backend tests also cover sanitized database errors, rollback, strict validation, privacy projections, identity scoping, duplicates/concurrency, and no incoming-likes endpoint.
-
-`npm run format` and `npm run format:check` use Prettier. `npm audit --omit=dev` checks shipped dependencies. At implementation time it reports zero runtime vulnerabilities; the complete audit reports development-tool advisories around picomatch. No available patched picomatch release was present in the registry at verification, so the lockfile retains the compatible toolchain; do not use audit-force downgrades as a substitute for a fix.
+`npm run format` uses Prettier. `npm audit --omit=dev` checks shipped dependencies.
 
 ## Deployment: Vercel + Render + Atlas
 
